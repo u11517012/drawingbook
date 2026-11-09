@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>mnanak na qalang 電子繪本</title>
+  <title>mnanak na qalang 繪本網站</title>
   <style>
     :root {
       --bg-color: #1a1512;
@@ -18,7 +18,7 @@
     html, body {
       width: 100%;
       height: 100vh;
-      overflow: hidden;
+      overflow-x: hidden;
       background-color: var(--bg-color);
       color: var(--text-color);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -29,31 +29,22 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 10px;
+      padding: 10px;
     }
 
     header {
       text-align: center;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
     }
 
-    header h1 { 
-      font-size: 1.4rem; 
-      color: var(--accent-color); 
-      letter-spacing: 1px; 
-    }
+    header h1 { font-size: 1.4rem; color: var(--accent-color); letter-spacing: 1px; }
 
-    .header-spirit {
-      height: 28px;
-      width: auto;
-      opacity: 0.85;
-      filter: drop-shadow(0 0 2px rgba(217, 119, 54, 0.4));
-    }
+    .header-icon { height: 26px; width: auto; }
 
     .book-container {
       position: relative;
@@ -63,7 +54,7 @@
       display: flex;
       flex-direction: column;
       background: var(--card-bg);
-      border: 5px solid var(--border-color);
+      border: 4px solid var(--border-color);
       border-radius: 12px;
       box-shadow: 0 5px 25px rgba(0,0,0,0.8);
       overflow: hidden;
@@ -89,93 +80,82 @@
       display: block;
     }
 
+    /* 載入與錯誤遮罩 */
+    .status-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .status-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top-color: var(--accent-color);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .controls {
       width: 100%;
-      padding: 6px 15px;
-      background: rgba(0, 0, 0, 0.55);
+      padding: 8px 15px;
+      background: rgba(0, 0, 0, 0.6);
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      gap: 10px;
     }
 
     .nav-group, .audio-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
-    /* 圖形化翻頁按鈕 */
-    .btn-arrow {
-      background: rgba(217, 119, 54, 0.2);
-      border: 1px solid var(--accent-color);
-      padding: 4px 10px;
-      border-radius: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: bold;
-      font-size: 0.9rem;
-      transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
-    }
-
-    .btn-arrow img {
-      height: 26px;
-      width: auto;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-    }
-
-    .btn-arrow:hover:not(:disabled) {
-      transform: scale(1.08);
-      background: rgba(217, 119, 54, 0.4);
-    }
-
-    .btn-arrow:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-      filter: grayscale(100%);
-    }
-
-    /* 音訊功能按鈕 */
-    .btn-icon {
+    .btn-action {
       background: var(--accent-color);
       color: #fff;
       border: none;
-      padding: 5px 14px;
+      padding: 6px 14px;
       border-radius: 20px;
       font-size: 0.85rem;
       font-weight: bold;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       transition: all 0.2s ease;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
-    .btn-icon img {
-      width: 22px;
-      height: 22px;
-      object-fit: contain;
-      border-radius: 50%;
-    }
-
-    .btn-icon:hover {
-      filter: brightness(1.15);
-      transform: translateY(-1px);
-    }
+    .btn-action img { height: 20px; width: auto; border-radius: 50%; }
+    .btn-action:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-action:disabled { background: #555 !important; cursor: not-allowed; opacity: 0.4; }
 
     .page-indicator {
       font-weight: bold;
       font-size: 0.95rem;
-      min-width: 70px;
+      min-width: 110px;
       text-align: center;
       color: #f3ece7;
     }
 
-    /* 底部縮圖列 */
     .thumbnails {
       width: 100%;
       max-width: 920px;
@@ -198,90 +178,104 @@
       flex-shrink: 0;
     }
 
-    .thumb.active, .thumb:hover {
-      opacity: 1;
-      border-color: var(--accent-color);
-    }
+    .thumb.active, .thumb:hover { opacity: 1; border-color: var(--accent-color); }
   </style>
 </head>
 <body>
 
   <header>
-    <img src="spirit.png" class="header-spirit" alt="" onerror="tryNextIcon(this, 'spirit')">
+    <img src="spirit.png" class="header-icon" alt="" onerror="this.style.display='none'">
     <h1>mnanak na qalang</h1>
-    <img src="spirit.png" class="header-spirit" alt="" onerror="tryNextIcon(this, 'spirit')">
+    <img src="spirit.png" class="header-icon" alt="" onerror="this.style.display='none'">
   </header>
 
   <main class="book-container">
     <div class="viewport">
       <img id="book-page" src="graphics/0.jpg" alt="繪本畫面">
+      
+      <!-- 狀態與重試遮罩 -->
+      <div id="status-overlay" class="status-overlay">
+        <div id="spinner" class="spinner"></div>
+        <div id="status-text">載入素材中...</div>
+        <button id="btn-retry" class="btn-action" style="display:none;">🔁 素材載入失敗，點此重試</button>
+      </div>
     </div>
 
-    <div class="controls">
+    <!-- 控制面板（提供標準 ARIA 與事件繫結） -->
+    <div class="controls" role="region" aria-label="繪本控制區">
       <div class="nav-group">
-        <button id="btn-prev" class="btn-arrow" onclick="changePage(-1)" title="上一頁">
-          <img src="left.jpg" alt="◀ 上一頁" onerror="tryNextIcon(this, 'left')">
+        <button id="btn-prev" class="btn-action" aria-label="上一頁">
+          <img src="left.jpg" alt="" onerror="this.src='left.png'">
+          <span>上一頁</span>
         </button>
 
-        <span class="page-indicator" id="page-num">封面</span>
+        <span class="page-indicator" id="page-num" aria-live="polite">封面 (0 / 19)</span>
 
-        <button id="btn-next" class="btn-arrow" onclick="changePage(1)" title="下一頁">
-          <img src="right.jpg" alt="下一頁 ▶" onerror="tryNextIcon(this, 'right')">
+        <button id="btn-next" class="btn-action" aria-label="下一頁">
+          <span>下一頁</span>
+          <img src="right.jpg" alt="" onerror="this.src='right.png'">
         </button>
       </div>
 
       <div class="audio-group">
-        <button id="btn-speech" class="btn-icon" onclick="toggleSpeech()">
-          <img src="read.jpg" alt="🔊" onerror="tryNextIcon(this, 'read')">
+        <button id="btn-speech" class="btn-action" aria-label="朗讀">
+          <img src="read.jpg" alt="" onerror="this.src='read.png'">
           <span id="txt-speech">播放朗讀</span>
         </button>
 
-        <button id="btn-music" class="btn-icon" onclick="toggleMusic()">
-          <img src="spirit.png" alt="🎵" onerror="tryNextIcon(this, 'spirit')">
+        <button id="btn-music" class="btn-action" aria-label="背景音樂">
+          <img src="spirit.png" alt="" onerror="this.style.display='none'">
           <span id="txt-music">播放音樂</span>
+        </button>
+
+        <button id="btn-mute" class="btn-action" aria-label="靜音控制">
+          <span id="txt-mute">🔇 靜音</span>
         </button>
       </div>
     </div>
   </main>
 
-  <div class="thumbnails" id="thumb-container"></div>
+  <div class="thumbnails" id="thumb-container" role="tablist" aria-label="頁面縮圖導覽"></div>
 
-  <audio id="audio-speech"></audio>
-  <audio id="audio-music" loop></audio>
+  <!-- 音訊載入器 -->
+  <audio id="audio-speech" preload="auto"></audio>
+  <audio id="audio-music" loop preload="auto"></audio>
 
   <script>
-    const totalPages = 19; 
+    const totalPages = 19;
     let currentPage = 0;
 
     let isSpeechPlaying = false;
     let isMusicPlaying = false;
+    let isMuted = false;
 
+    // DOM 元素繫結
     const imgElement = document.getElementById('book-page');
     const pageNumElement = document.getElementById('page-num');
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
+    const btnSpeech = document.getElementById('btn-speech');
+    const btnMusic = document.getElementById('btn-music');
+    const btnMute = document.getElementById('btn-mute');
+    
     const txtSpeech = document.getElementById('txt-speech');
     const txtMusic = document.getElementById('txt-music');
-    
+    const txtMute = document.getElementById('txt-mute');
+
+    const statusOverlay = document.getElementById('status-overlay');
+    const spinner = document.getElementById('spinner');
+    const statusText = document.getElementById('status-text');
+    const btnRetry = document.getElementById('btn-retry');
+
     const audioSpeech = document.getElementById('audio-speech');
     const audioMusic = document.getElementById('audio-music');
     const thumbContainer = document.getElementById('thumb-container');
 
-    // 多重自動路徑與格式備用嘗試機制
-    function tryNextIcon(img, baseName) {
-      if (!img.dataset.step) {
-        img.dataset.step = "1";
-        img.src = baseName + ".png";
-      } else if (img.dataset.step === "1") {
-        img.dataset.step = "2";
-        img.src = baseName + ".JPG";
-      } else if (img.dataset.step === "2") {
-        img.dataset.step = "3";
-        img.src = baseName + ".PNG";
-      } else {
-        // 若素材圖皆無法載入，隱藏圖像改顯示文字按鈕
-        img.style.display = 'none';
-      }
+    // 1. 初始化縮圖與 Event Listeners
+    function init() {
+      initThumbnails();
+      bindEvents();
+      updatePage();
     }
 
     function initThumbnails() {
@@ -290,19 +284,55 @@
         const thumb = document.createElement('img');
         thumb.src = `graphics/${i}.jpg`;
         thumb.className = `thumb ${i === 0 ? 'active' : ''}`;
-        thumb.onclick = () => goToPage(i);
-        thumb.id = `thumb-${i}`;
+        thumb.alt = `第 ${i} 頁縮圖`;
+        thumb.role = 'tab';
+        thumb.addEventListener('click', () => goToPage(i));
         thumbContainer.appendChild(thumb);
       }
     }
 
-    function updatePage() {
-      imgElement.src = `graphics/${currentPage}.jpg`;
-      pageNumElement.textContent = currentPage === 0 ? "封面" : `第 ${currentPage} 頁`;
+    function bindEvents() {
+      btnPrev.addEventListener('click', () => changePage(-1));
+      btnNext.addEventListener('click', () => changePage(1));
+      btnSpeech.addEventListener('click', toggleSpeech);
+      btnMusic.addEventListener('click', toggleMusic);
+      btnMute.addEventListener('click', toggleMute);
+      btnRetry.addEventListener('click', () => updatePage());
 
+      // 音訊結束與音量 Ducking 管理
+      audioSpeech.addEventListener('ended', () => {
+        isSpeechPlaying = false;
+        txtSpeech.textContent = "播放朗讀";
+        restoreMusicVolume();
+      });
+
+      // 鍵盤操控 (Space, ArrowLeft, ArrowRight)
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'ArrowLeft') changePage(-1);
+        if (e.code === 'ArrowRight') changePage(1);
+        if (e.code === 'Space') {
+          e.preventDefault();
+          toggleSpeech();
+        }
+      });
+    }
+
+    // 2. 核心頁面切換與動態聲音處理
+    function updatePage() {
+      showLoading(true);
+
+      // 停止並重置舊頁面的朗讀與音樂
+      audioSpeech.pause();
+      audioSpeech.currentTime = 0;
+      
+      imgElement.src = `graphics/${currentPage}.jpg`;
+      pageNumElement.textContent = currentPage === 0 ? `封面 (0 / ${totalPages})` : `第 ${currentPage} 頁 (${currentPage} / ${totalPages})`;
+
+      // 更新首頁與末頁的按鈕停用狀態 (邊界檢查)
       btnPrev.disabled = (currentPage === 0);
       btnNext.disabled = (currentPage === totalPages);
 
+      // 更新縮圖標記
       document.querySelectorAll('.thumb').forEach((el, idx) => {
         el.classList.toggle('active', idx === currentPage);
         if (idx === currentPage) {
@@ -310,14 +340,30 @@
         }
       });
 
+      // 更新音檔 Sources
       audioSpeech.src = `speech/speech${currentPage}.mp3`;
       audioMusic.src = `music/music${currentPage}.mp3`;
 
-      if (isSpeechPlaying) {
-        audioSpeech.play().catch(e => console.log('Audio Speech blocked:', e));
+      // 圖片載入完成回饋
+      imgElement.onload = () => {
+        showLoading(false);
+        preloadNextPage();
+      };
+      
+      imgElement.onerror = () => {
+        showError("圖片素材載入失敗");
+      };
+
+      // 音樂與朗讀狀態續行
+      applyMuteState();
+      
+      if (isSpeechPlaying && !isMuted) {
+        duckMusicVolume();
+        audioSpeech.play().catch(e => console.log('Speech Autoplay Blocked:', e));
       }
-      if (isMusicPlaying) {
-        audioMusic.play().catch(e => console.log('Audio Music blocked:', e));
+      
+      if (isMusicPlaying && !isMuted) {
+        audioMusic.play().catch(e => console.log('Music Autoplay Blocked:', e));
       }
     }
 
@@ -336,17 +382,21 @@
       }
     }
 
+    // 3. 聲音開關、Ducking (混音降低) 與 Mute 管理
     function toggleSpeech() {
       if (isSpeechPlaying) {
         audioSpeech.pause();
         isSpeechPlaying = false;
         txtSpeech.textContent = "播放朗讀";
+        restoreMusicVolume();
       } else {
+        if (isMuted) toggleMute(); // 若處於靜音則自動解除靜音
+        duckMusicVolume();
         audioSpeech.play().then(() => {
           isSpeechPlaying = true;
           txtSpeech.textContent = "暫停朗讀";
         }).catch(err => {
-          alert(`無法播放朗讀！請檢查 speech/ 資料夾是否有 speech${currentPage}.mp3 檔。`);
+          console.warn('朗讀播放失敗：', err);
         });
       }
     }
@@ -357,27 +407,65 @@
         isMusicPlaying = false;
         txtMusic.textContent = "播放音樂";
       } else {
+        if (isMuted) toggleMute();
         audioMusic.play().then(() => {
           isMusicPlaying = true;
           txtMusic.textContent = "暫停音樂";
         }).catch(err => {
-          alert(`無法播放音樂！請檢查 music/ 資料夾是否有 music${currentPage}.mp3 檔。`);
+          console.warn('音樂播放失敗：', err);
         });
       }
     }
 
-    audioSpeech.onended = () => {
-      isSpeechPlaying = false;
-      txtSpeech.textContent = "播放朗讀";
-    };
+    function toggleMute() {
+      isMuted = !isMuted;
+      applyMuteState();
+    }
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') changePage(-1);
-      if (e.key === 'ArrowRight') changePage(1);
-    });
+    function applyMuteState() {
+      audioSpeech.muted = isMuted;
+      audioMusic.muted = isMuted;
+      txtMute.textContent = isMuted ? "🔊 解除靜音" : "🔇 靜音";
+    }
 
-    initThumbnails();
-    updatePage();
+    // 朗讀時將背景音樂音量降低至 0.2 (Ducking)
+    function duckMusicVolume() {
+      audioMusic.volume = 0.2;
+    }
+
+    function restoreMusicVolume() {
+      audioMusic.volume = 1.0;
+    }
+
+    // 4. 預載與 UI 反饋
+    function preloadNextPage() {
+      if (currentPage < totalPages) {
+        const nextIdx = currentPage + 1;
+        const nextImg = new Image();
+        nextImg.src = `graphics/${nextIdx}.jpg`;
+      }
+    }
+
+    function showLoading(loading) {
+      if (loading) {
+        statusOverlay.classList.add('active');
+        spinner.style.display = 'block';
+        statusText.textContent = "載入素材中...";
+        btnRetry.style.display = 'none';
+      } else {
+        statusOverlay.classList.remove('active');
+      }
+    }
+
+    function showError(msg) {
+      statusOverlay.classList.add('active');
+      spinner.style.display = 'none';
+      statusText.textContent = `⚠️ ${msg}`;
+      btnRetry.style.display = 'inline-flex';
+    }
+
+    // 啟動專案
+    window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
