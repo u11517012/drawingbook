@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mnanak na qalang 電子繪本</title>
+  <style>
+    :root {
+      --bg-color: #1a1512;
+      --card-bg: #2d241e;
+      --accent-color: #d97736;
+      --text-color: #f3ece7;
+      --border-color: #594537;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 4px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    header h1 { 
+      font-size: 1.4rem; 
+      color: var(--accent-color); 
+      letter-spacing: 1px; 
+    }
+
+    .header-spirit {
+      height: 28px;
+      width: auto;
+      opacity: 0.85;
+      filter: drop-shadow(0 0 2px rgba(217, 119, 54, 0.4));
+    }
+
+    .book-container {
+      position: relative;
+      width: 100%;
+      max-width: 920px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--card-bg);
+      border: 5px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.8);
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .viewport {
+      width: 100%;
+      flex: 1;
+      position: relative;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .viewport img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .controls {
+      width: 100%;
+      padding: 6px 15px;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .nav-group, .audio-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 圖形化翻頁按鈕 */
+    .btn-arrow {
+      background: rgba(217, 119, 54, 0.2);
+      border: 1px solid var(--accent-color);
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      font-size: 0.9rem;
+      transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+
+    .btn-arrow img {
+      height: 26px;
+      width: auto;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    }
+
+    .btn-arrow:hover:not(:disabled) {
+      transform: scale(1.08);
+      background: rgba(217, 119, 54, 0.4);
+    }
+
+    .btn-arrow:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      filter: grayscale(100%);
+    }
+
+    /* 音訊功能按鈕 */
+    .btn-icon {
+      background: var(--accent-color);
+      color: #fff;
+      border: none;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .btn-icon img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      border-radius: 50%;
+    }
+
+    .btn-icon:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    .page-indicator {
+      font-weight: bold;
+      font-size: 0.95rem;
+      min-width: 70px;
+      text-align: center;
+      color: #f3ece7;
+    }
+
+    /* 底部縮圖列 */
+    .thumbnails {
+      width: 100%;
+      max-width: 920px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 6px 0 2px 0;
+      flex-shrink: 0;
+    }
+
+    .thumb {
+      width: 48px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: 4px;
+      cursor: pointer;
+      opacity: 0.45;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .thumb.active, .thumb:hover {
+      opacity: 1;
+      border-color: var(--accent-color);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="spirit.png" class="header-spirit" alt="" onerror="tryNextIcon(this, 'spirit')">
+    <h1>mnanak na qalang</h1>
+    <img src="spirit.png" class="header-spirit" alt="" onerror="tryNextIcon(this, 'spirit')">
+  </header>
+
+  <main class="book-container">
+    <div class="viewport">
+      <img id="book-page" src="graphics/0.jpg" alt="繪本畫面">
+    </div>
+
+    <div class="controls">
+      <div class="nav-group">
+        <button id="btn-prev" class="btn-arrow" onclick="changePage(-1)" title="上一頁">
+          <img src="left.jpg" alt="◀ 上一頁" onerror="tryNextIcon(this, 'left')">
+        </button>
+
+        <span class="page-indicator" id="page-num">封面</span>
+
+        <button id="btn-next" class="btn-arrow" onclick="changePage(1)" title="下一頁">
+          <img src="right.jpg" alt="下一頁 ▶" onerror="tryNextIcon(this, 'right')">
+        </button>
+      </div>
+
+      <div class="audio-group">
+        <button id="btn-speech" class="btn-icon" onclick="toggleSpeech()">
+          <img src="read.jpg" alt="🔊" onerror="tryNextIcon(this, 'read')">
+          <span id="txt-speech">播放朗讀</span>
+        </button>
+
+        <button id="btn-music" class="btn-icon" onclick="toggleMusic()">
+          <img src="spirit.png" alt="🎵" onerror="tryNextIcon(this, 'spirit')">
+          <span id="txt-music">播放音樂</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <div class="thumbnails" id="thumb-container"></div>
+
+  <audio id="audio-speech"></audio>
+  <audio id="audio-music" loop></audio>
+
+  <script>
+    const totalPages = 19; 
+    let currentPage = 0;
+
+    let isSpeechPlaying = false;
+    let isMusicPlaying = false;
+
+    const imgElement = document.getElementById('book-page');
+    const pageNumElement = document.getElementById('page-num');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const txtSpeech = document.getElementById('txt-speech');
+    const txtMusic = document.getElementById('txt-music');
+    
+    const audioSpeech = document.getElementById('audio-speech');
+    const audioMusic = document.getElementById('audio-music');
+    const thumbContainer = document.getElementById('thumb-container');
+
+    // 多重自動路徑與格式備用嘗試機制
+    function tryNextIcon(img, baseName) {
+      if (!img.dataset.step) {
+        img.dataset.step = "1";
+        img.src = baseName + ".png";
+      } else if (img.dataset.step === "1") {
+        img.dataset.step = "2";
+        img.src = baseName + ".JPG";
+      } else if (img.dataset.step === "2") {
+        img.dataset.step = "3";
+        img.src = baseName + ".PNG";
+      } else {
+        // 若素材圖皆無法載入，隱藏圖像改顯示文字按鈕
+        img.style.display = 'none';
+      }
+    }
+
+    function initThumbnails() {
+      thumbContainer.innerHTML = '';
+      for (let i = 0; i <= totalPages; i++) {
+        const thumb = document.createElement('img');
+        thumb.src = `graphics/${i}.jpg`;
+        thumb.className = `thumb ${i === 0 ? 'active' : ''}`;
+        thumb.onclick = () => goToPage(i);
+        thumb.id = `thumb-${i}`;
+        thumbContainer.appendChild(thumb);
+      }
+    }
+
+    function updatePage() {
+      imgElement.src = `graphics/${currentPage}.jpg`;
+      pageNumElement.textContent = currentPage === 0 ? "封面" : `第 ${currentPage} 頁`;
+
+      btnPrev.disabled = (currentPage === 0);
+      btnNext.disabled = (currentPage === totalPages);
+
+      document.querySelectorAll('.thumb').forEach((el, idx) => {
+        el.classList.toggle('active', idx === currentPage);
+        if (idx === currentPage) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      });
+
+      audioSpeech.src = `speech/speech${currentPage}.mp3`;
+      audioMusic.src = `music/music${currentPage}.mp3`;
+
+      if (isSpeechPlaying) {
+        audioSpeech.play().catch(e => console.log('Audio Speech blocked:', e));
+      }
+      if (isMusicPlaying) {
+        audioMusic.play().catch(e => console.log('Audio Music blocked:', e));
+      }
+    }
+
+    function changePage(delta) {
+      const target = currentPage + delta;
+      if (target >= 0 && target <= totalPages) {
+        currentPage = target;
+        updatePage();
+      }
+    }
+
+    function goToPage(pageIndex) {
+      if (pageIndex >= 0 && pageIndex <= totalPages) {
+        currentPage = pageIndex;
+        updatePage();
+      }
+    }
+
+    function toggleSpeech() {
+      if (isSpeechPlaying) {
+        audioSpeech.pause();
+        isSpeechPlaying = false;
+        txtSpeech.textContent = "播放朗讀";
+      } else {
+        audioSpeech.play().then(() => {
+          isSpeechPlaying = true;
+          txtSpeech.textContent = "暫停朗讀";
+        }).catch(err => {
+          alert(`無法播放朗讀！請檢查 speech/ 資料夾是否有 speech${currentPage}.mp3 檔。`);
+        });
+      }
+    }
+
+    function toggleMusic() {
+      if (isMusicPlaying) {
+        audioMusic.pause();
+        isMusicPlaying = false;
+        txtMusic.textContent = "播放音樂";
+      } else {
+        audioMusic.play().then(() => {
+          isMusicPlaying = true;
+          txtMusic.textContent = "暫停音樂";
+        }).catch(err => {
+          alert(`無法播放音樂！請檢查 music/ 資料夾是否有 music${currentPage}.mp3 檔。`);
+        });
+      }
+    }
+
+    audioSpeech.onended = () => {
+      isSpeechPlaying = false;
+      txtSpeech.textContent = "播放朗讀";
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') changePage(-1);
+      if (e.key === 'ArrowRight') changePage(1);
+    });
+
+    initThumbnails();
+    updatePage();
+  </script>
+</body>
+</html>
