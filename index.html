@@ -263,19 +263,82 @@
 
     .thumb.active { opacity: 1; border-color: var(--accent-color); }
 
-    /* 除錯面板 */
+    /* 除錯面板（升級為可控制控制台） */
     #debug-panel {
       display: none;
       position: fixed;
       bottom: 50px;
       right: 10px;
-      background: rgba(0,0,0,0.85);
+      background: rgba(0,0,0,0.92);
       border: 1px solid var(--accent-color);
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 0.75rem;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
       z-index: 200;
-      max-width: 260px;
+      width: 260px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.85);
+      line-height: 1.5;
+    }
+
+    .debug-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+      color: var(--accent-color);
+    }
+
+    .debug-close {
+      background: none;
+      border: none;
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .debug-controls {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .debug-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .debug-input {
+      width: 52px;
+      padding: 2px 4px;
+      background: #1a1512;
+      color: #fff;
+      border: 1px solid var(--accent-color);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
+    .debug-btn {
+      background: var(--card-bg);
+      color: var(--text-color);
+      border: 1px solid var(--accent-color);
+      padding: 3px 7px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .debug-btn:hover {
+      background: var(--accent-color);
+      color: #fff;
     }
 
     @media (max-width: 600px) {
@@ -349,13 +412,38 @@
   <audio id="audio-speech" preload="auto"></audio>
   <audio id="audio-music" loop preload="auto"></audio>
 
-  <!-- 除錯控制台 -->
+  <!-- 除錯控制台（支援狀態檢視與互動控制） -->
   <div id="debug-panel">
-    <strong>[DEBUG 資訊]</strong><br>
-    當前頁面: <span id="debug-page">0</span><br>
-    音樂狀態: <span id="debug-music">播放中</span><br>
-    朗讀狀態: <span id="debug-speech">已停止</span><br>
-    靜音狀態: <span id="debug-mute">false</span>
+    <div class="debug-header">
+      <strong>[DEBUG 控制台]</strong>
+      <button id="btn-debug-close" class="debug-close" title="關閉除錯面板">✕</button>
+    </div>
+    <div>
+      當前頁面: <span id="debug-page">0</span> / 19<br>
+      音樂狀態: <span id="debug-music">播放中</span><br>
+      朗讀狀態: <span id="debug-speech">已停止</span><br>
+      靜音狀態: <span id="debug-mute">false</span><br>
+      主音量值: <span id="debug-volume">100%</span>
+    </div>
+    <div class="debug-controls">
+      <div class="debug-row">
+        <span>跳至頁碼:</span>
+        <div>
+          <input type="number" id="debug-page-input" class="debug-input" min="0" max="19" value="0">
+          <button id="btn-debug-jump" class="debug-btn">跳轉</button>
+        </div>
+      </div>
+      <div class="debug-row">
+        <button id="btn-debug-first" class="debug-btn">首頁 (0)</button>
+        <button id="btn-debug-last" class="debug-btn">末頁 (19)</button>
+        <button id="btn-debug-reload" class="debug-btn">重載本頁</button>
+      </div>
+      <div class="debug-row">
+        <button id="btn-debug-speech" class="debug-btn">切朗讀</button>
+        <button id="btn-debug-music" class="debug-btn">切音樂</button>
+        <button id="btn-debug-mute" class="debug-btn">切靜音</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -396,6 +484,17 @@
     const btnDebugToggle = document.getElementById('btn-debug-toggle');
     const debugPanel = document.getElementById('debug-panel');
 
+    // 除錯控制台互動元素
+    const btnDebugClose = document.getElementById('btn-debug-close');
+    const debugPageInput = document.getElementById('debug-page-input');
+    const btnDebugJump = document.getElementById('btn-debug-jump');
+    const btnDebugFirst = document.getElementById('btn-debug-first');
+    const btnDebugLast = document.getElementById('btn-debug-last');
+    const btnDebugReload = document.getElementById('btn-debug-reload');
+    const btnDebugSpeech = document.getElementById('btn-debug-speech');
+    const btnDebugMusic = document.getElementById('btn-debug-music');
+    const btnDebugMute = document.getElementById('btn-debug-mute');
+
     function initThumbnails() {
       thumbContainer.innerHTML = '';
       for (let i = 0; i <= totalPages; i++) {
@@ -405,6 +504,12 @@
         thumb.onclick = () => goToPage(i);
         thumbContainer.appendChild(thumb);
       }
+    }
+
+    function toggleDebugPanel() {
+      const isHidden = debugPanel.style.display === 'none' || debugPanel.style.display === '';
+      debugPanel.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) updateDebug();
     }
 
     function bindEvents() {
@@ -423,13 +528,35 @@
       btnMute.addEventListener('click', toggleMute);
       btnRetry.addEventListener('click', () => updatePageDirectly());
 
-      btnDebugToggle.addEventListener('click', () => {
-        debugPanel.style.display = debugPanel.style.display === 'block' ? 'none' : 'block';
+      // 除錯模式開關與內部控制事件
+      btnDebugToggle.addEventListener('click', toggleDebugPanel);
+      btnDebugClose.addEventListener('click', () => { debugPanel.style.display = 'none'; });
+
+      btnDebugJump.addEventListener('click', () => {
+        const target = parseInt(debugPageInput.value, 10);
+        if (!isNaN(target) && target >= 0 && target <= totalPages) {
+          goToPage(target);
+        }
       });
+
+      debugPageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          btnDebugJump.click();
+        }
+      });
+
+      btnDebugFirst.addEventListener('click', () => goToPage(0));
+      btnDebugLast.addEventListener('click', () => goToPage(totalPages));
+      btnDebugReload.addEventListener('click', () => updatePageDirectly());
+      btnDebugSpeech.addEventListener('click', toggleSpeech);
+      btnDebugMusic.addEventListener('click', toggleMusic);
+      btnDebugMute.addEventListener('click', toggleMute);
 
       volumeSlider.addEventListener('input', (e) => {
         masterVolume = parseFloat(e.target.value);
         updateVolume();
+        updateDebug();
       });
 
       // 朗讀播放結束：恢復音量
@@ -442,6 +569,9 @@
 
       // 全域鍵盤事件監聽
       document.addEventListener('keydown', (e) => {
+        // 若正在輸入除錯頁碼則不觸發全域快捷鍵
+        if (document.activeElement === debugPageInput) return;
+
         if (e.code === 'ArrowLeft') {
           e.preventDefault();
           changePage(-1);
@@ -454,7 +584,7 @@
         } else if (e.code === 'KeyM') {
           toggleMute();
         } else if (e.code === 'KeyD') {
-          debugPanel.style.display = debugPanel.style.display === 'block' ? 'none' : 'block';
+          toggleDebugPanel();
         }
       });
 
@@ -614,8 +744,12 @@
     function updateDebug() {
       document.getElementById('debug-page').textContent = currentPage;
       document.getElementById('debug-music').textContent = isMusicPlaying ? '播放中' : '已暫停';
-      document.getElementById('debug-speech').textContent = isSpeechPlaying ? '播放中' : '已暫停';
+      document.getElementById('debug-speech').textContent = isSpeechPlaying ? '播放中' : '已停止';
       document.getElementById('debug-mute').textContent = isMuted;
+      document.getElementById('debug-volume').textContent = `${Math.round(masterVolume * 100)}%`;
+      if (document.activeElement !== debugPageInput) {
+        debugPageInput.value = currentPage;
+      }
     }
 
     initThumbnails();
